@@ -1,4 +1,4 @@
-module github.com/abelli85/jodatime
+module github.com/abelli5/jodatime
 
 go 1.16
 
