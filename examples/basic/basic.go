@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tengattack/jodatime"
+	"github.com/abelli85/jodatime"
 )
 
 func main() {

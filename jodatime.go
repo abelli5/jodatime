@@ -201,3 +201,166 @@ func locabs(t time.Time) (name string, offset int, abs uint64) {
 	abs = uint64(sec + (unixToInternal + internalToAbsolute))
 	return
 }
+
+// JodaDate is the standard implementation of an unmodifiable JodaDate class.
+// <p>
+// <code>JodaDate</code> is the most widely used implementation of
+// {@link time.Date}. As with all instants, it represents an exact
+// point on the time-line, but limited to the precision of milliseconds.
+// A <code>JodaDate</code> calculates its fields with respect to a
+// {@link time.Location time zone}.
+// <p>
+// JodaDate is thread-safe and immutable, provided that the time.Date is as well.
+// All standard time.Date classes supplied are thread-safe and immutable.
+type JodaDate struct {
+	Date time.Time
+}
+
+// {@link JodaDate} constructor with full date fields & time-zone.
+func DateZone(year int, month time.Month, day, hour, min, sec, nsec int, loc *time.Location) JodaDate {
+	if loc == nil {
+		panic("loc can't be nil")
+	}
+	return JodaDate{time.Date(year, month, day, hour, min, sec, nsec, loc)}
+}
+
+// {@link JodaDate} constructor with full date fields with default time-zone of Asia/Shanghai.
+func DateFull(year int, month time.Month, day, hour, min, sec, nsec int) JodaDate {
+	return JodaDate{time.Date(year, month, day, hour, min, sec, nsec, time.FixedZone("Asia/Shanghai", 8))}
+}
+
+// {@link JodaDate} constructor with year/month/day fields with default time-zone of Asia/Shanghai.
+func DateDay(year int, month time.Month, day int) JodaDate {
+	return JodaDate{time.Date(year, month, day, 0, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8))}
+}
+
+// {@link JodaDate} constructor with year/month/day/hour fields with default time-zone of Asia/Shanghai.
+func DateHour(year int, month time.Month, day, hour int) JodaDate {
+	return JodaDate{time.Date(year, month, day, hour, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8))}
+}
+
+// {@link JodaDate} constructor with year/month/day/hour/second fields with default time-zone of Asia/Shanghai.
+func DateMinute(year int, month time.Month, day, hour, min int) JodaDate {
+	return JodaDate{time.Date(year, month, day, hour, min, 0, 0, time.FixedZone("Asia/Shanghai", 8))}
+}
+
+// {@link JodaDate} constructor with year/month/day/hour/second fields with default time-zone of Asia/Shanghai.
+func DateSecond(year int, month time.Month, day, hour, min, sec int) JodaDate {
+	return JodaDate{time.Date(year, month, day, hour, min, sec, 0, time.FixedZone("Asia/Shanghai", 8))}
+}
+
+func (j JodaDate) AddDay(d int) JodaDate {
+	return JodaDate{j.Date.Add(time.Duration(d*24) * time.Hour)}
+}
+
+func (j JodaDate) AddHour(h int) JodaDate {
+	return JodaDate{j.Date.Add(time.Duration(h) * time.Hour)}
+}
+
+func (j JodaDate) AddMinute(m int) JodaDate {
+	return JodaDate{j.Date.Add(time.Duration(m) * time.Minute)}
+}
+
+func (j JodaDate) AddSecond(s int) JodaDate {
+	return JodaDate{j.Date.Add(time.Duration(s) * time.Second)}
+}
+
+func (j JodaDate) AddWeek(w int) JodaDate {
+	return JodaDate{j.Date.Add(time.Duration(w*7*24) * time.Hour)}
+}
+
+func (j JodaDate) DateLoc(loc *time.Location) time.Time {
+	if loc == nil {
+		loc = time.Local
+	}
+	return j.Date.In(loc)
+}
+
+func (j JodaDate) DateChina() time.Time {
+	return j.Date.In(time.FixedZone("Asia/Shanghai", 8))
+}
+
+// sum days from beginning year up to specified years.
+// it counts leap years in.
+func yearsDays(dt1 *time.Time, y int) int64 {
+	if y == 0 {
+		return 0
+	}
+
+	y1 := dt1.Year()
+	y2 := y1 + y
+
+	// if y is negative, exchange y1 & y2.
+	if y < 0 {
+		yx := y1
+		y1 = y2
+		y2 = yx
+	}
+
+	// rem(4) = 0
+	f1 := y1 / 4
+	f2 := y2 / 4
+	yf := f2 - f1
+
+	// rem(100) = 0
+	h1 := y1 / 100
+	h2 := y2 / 100
+	yh := h2 - h1
+
+	// rem(400) = 0
+	fh1 := y1 / 400
+	fh2 := y2 / 400
+	yfh := fh2 - fh1
+
+	leapDay := 0
+	if isLeap(y1) && !isLeap(y2) && (dt1.Month() == 1 || (dt1.Month() == 2 && dt1.Day() < 29)) {
+		leapDay = 1
+	}
+
+	if y > 0 {
+		return int64((yf - yh + yfh) + leapDay + 365*y)
+	} else {
+		return -int64((yf - yh + yfh) + leapDay + 365*(-y))
+	}
+}
+
+// Add specified years to the date.
+// it counts leap years in.
+// year can't exceed 2563-1-1.
+func (j JodaDate) AddYear(y int) JodaDate {
+	days := yearsDays(&j.Date, y)
+
+	return JodaDate{j.Date.Add(time.Duration(24*days) * time.Hour)}
+}
+
+// add specified months to the date.
+// it counts leap years and months in.
+func (j JodaDate) AddMonth(m int) JodaDate {
+	// dt1: maybe last year.
+	days := yearsDays(&j.Date, m/12)
+	dt1 := j.Date.Add(time.Duration(24*days) * time.Hour)
+
+	m1 := int(j.Date.Month())
+	m2 := (m1 + m%12) % 12
+
+	leapDay := 0
+	if m1 < m2 {
+		days = days + int64(daysBefore[m2-1]-daysBefore[m1-1])
+
+		// [m1, m2] cross 2-29 in leap-year.
+		if isLeap(dt1.Year()) && isLeap(j.Date.Year()) && m2 > 2 && (m1 < 2 || (m1 == 2 && j.Date.Day() <= 29)) {
+			leapDay = 1
+		}
+	} else if m1 > m2 {
+		// year must be different.
+		days = days + int64(daysBefore[12]-daysBefore[m1]+daysBefore[m2])
+		if isLeap(dt1.Year()) && (m1 < 2 || (m1 == 2 && j.Date.Day() <= 29)) {
+			leapDay = 1
+		} else if isLeap(dt1.Year()+1) && m2 > 2 {
+			leapDay = 1
+		}
+	}
+	days = days + int64(leapDay)
+
+	return JodaDate{j.Date.Add(time.Duration(24*days) * time.Hour)}
+}

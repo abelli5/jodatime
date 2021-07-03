@@ -1,11 +1,12 @@
 package jodatime_test
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
-	. "github.com/tengattack/jodatime"
+	. "github.com/abelli85/jodatime"
 )
 
 var (
@@ -155,5 +156,130 @@ func BenchmarkTimeParse(b *testing.B) {
 	s := timeNow.Format(time.RFC3339)
 	for n := 0; n < b.N; n++ {
 		time.Parse(s, RFC3339)
+	}
+}
+
+func TestAddDay(t *testing.T) {
+	jt := JodaDate{time.Date(2001, 3, 1, 0, 0, 0, 0, time.Local)}
+	jt = jt.AddDay(3).AddHour(7).AddMinute(15).AddSecond(59).AddWeek(2)
+
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2001 && jt.Date.Month() == 3 && jt.Date.Day() == 18 && jt.Date.Hour() == 7 && jt.Date.Minute() == 15 && jt.Date.Second() == 59) {
+		t.Error("should final time be: 2001-03-01 15:00:00 -0800 PST")
+	}
+}
+
+func TestAddYear(t *testing.T) {
+	jt := DateDay(2021, 7, 3)
+
+	jt = jt.AddYear(3)
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2024 && jt.Date.Month() == 7 && jt.Date.Day() == 3) {
+		t.Error("should final date be 2024-7-3")
+	}
+
+	jt = jt.AddYear(11)
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2035 && jt.Date.Month() == 7 && jt.Date.Day() == 3) {
+		t.Error("should final date be 2035-7-3")
+	}
+
+	jt = jt.AddYear(235)
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2270 && jt.Date.Month() == 7 && jt.Date.Day() == 3) {
+		t.Error("should final date be 2270-7-3")
+	}
+
+	jt = jt.AddYear(292)
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2562 && jt.Date.Month() == 7 && jt.Date.Day() == 3) {
+		t.Error("should final date be 2562-7-3")
+	}
+
+	jt = jt.AddYear(-292)
+	fmt.Println(jt)
+	if !(jt.Date.Year() == 2270 && jt.Date.Month() == 7 && jt.Date.Day() == 3) {
+		t.Error("should final date be 2270-7-3")
+	}
+}
+
+func TestAddMonthNoneLeap(t *testing.T) {
+	jt := DateHour(2023, 5, 8, 6)
+
+	jt1 := jt.AddMonth(3)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2023 && jt1.Date.Month() == 8 && jt1.Date.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2023-8-8 6:00")
+	}
+
+	jt1 = jt.AddMonth(8)
+	fmt.Println(jt1)
+	dt := jt1.DateChina()
+	if !(jt1.Date.Year() == 2024 && jt1.Date.Month() == 1 && dt.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2024-1-8 6:00")
+	}
+}
+
+func TestAddMonthBackLeap(t *testing.T) {
+	jt := DateHour(2023, 5, 8, 6)
+
+	jt1 := jt.AddMonth(3)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2023 && jt1.Date.Month() == 8 && jt1.Date.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2023-8-8 6:00")
+	}
+
+	jt1 = jt.AddMonth(17)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2024 && jt1.Date.Month() == 10 && jt1.Date.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2024-8-8 6:00")
+	}
+}
+
+func TestAddMonthForthLeap(t *testing.T) {
+	jt := DateHour(2024, 2, 28, 6)
+
+	jt1 := jt.AddMonth(3)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2024 && jt1.Date.Month() == 5 && jt1.Date.Day() == 28 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2024-5-28 6:00")
+	}
+
+	jt1 = jt.AddMonth(17)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2025 && jt1.Date.Month() == 7 && jt1.Date.Day() == 28 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2025-7-28 6:00")
+	}
+}
+
+func TestAddMonthForthLeapMarch(t *testing.T) {
+	jt := DateHour(2024, 2, 29, 6)
+
+	jt1 := jt.AddMonth(3)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2024 && jt1.Date.Month() == 5 && jt1.Date.Day() == 29 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2024-5-29 6:00")
+	}
+
+	jt1 = jt.AddMonth(57)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2028 && jt1.Date.Month() == 11 && jt1.Date.Day() == 29 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2025-11-29 6:00")
+	}
+}
+
+func TestAddMonthBothLeap(t *testing.T) {
+	jt := DateHour(2024, 1, 8, 6)
+
+	jt1 := jt.AddMonth(3)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2024 && jt1.Date.Month() == 4 && jt1.Date.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2024-4-8 6:00")
+	}
+
+	jt1 = jt.AddMonth(56)
+	fmt.Println(jt1)
+	if !(jt1.Date.Year() == 2028 && jt1.Date.Month() == 9 && jt1.Date.Day() == 8 && jt1.Date.Hour() == 6) {
+		t.Error("should final month is: 2028-9-8 6:00")
 	}
 }
