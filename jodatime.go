@@ -1,6 +1,9 @@
 package jodatime
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // absWeekday is like Weekday but operates on an absolute time.
 func absWeekday(abs uint64) time.Weekday {
@@ -138,6 +141,22 @@ var daysBefore = [...]int32{
 	31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
 	31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30,
 	31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31,
+}
+
+var daysOfMonth = [...]int32{
+	0,
+	31,
+	28,
+	31,
+	30,
+	31,
+	30,
+	31,
+	31,
+	30,
+	31,
+	30,
+	31,
 }
 
 func daysIn(m time.Month, year int) int {
@@ -363,4 +382,68 @@ func (j JodaDate) AddMonth(m int) JodaDate {
 	days = days + int64(leapDay)
 
 	return JodaDate{j.Date.Add(time.Duration(24*days) * time.Hour)}
+}
+
+// set second of the date and return copy
+func (j JodaDate) WithNanosecond(ns int) JodaDate {
+	if ns < 0 || ns > 999999999 {
+		panic("Nanosecond should be [0,999999999]")
+	}
+	delta := ns - j.Date.Nanosecond()
+	return JodaDate{j.Date.Add(time.Duration(delta) * time.Nanosecond)}
+}
+
+// set second of the date and return copy
+func (j JodaDate) WithSecond(sec int) JodaDate {
+	if sec < 0 || sec > 59 {
+		panic("Second should be [0,59]")
+	}
+	delta := sec - j.Date.Second()
+	return JodaDate{j.Date.Add(time.Duration(delta) * time.Second)}
+}
+
+// set minute of the date and return copy
+func (j JodaDate) WithMinute(min int) JodaDate {
+	if min < 0 || min > 59 {
+		panic("Minute should be [0,59]")
+	}
+	delta := min - j.Date.Minute()
+	return JodaDate{j.Date.Add(time.Duration(delta) * time.Minute)}
+}
+
+// set hour of the date and return copy
+func (j JodaDate) WithHour(hour int) JodaDate {
+	if hour < 0 || hour > 23 {
+		panic("Hour should be [0,23]")
+	}
+	delta := hour - j.Date.Hour()
+	return JodaDate{j.Date.Add(time.Duration(delta) * time.Hour)}
+}
+
+// set day of the date and return copy
+func (j JodaDate) WithDay(day int) JodaDate {
+	days := int(daysOfMonth[j.Date.Month()])
+	if j.Date.Month() == 2 && isLeap(j.Date.Year()) {
+		days = 29
+	}
+	if day < 0 || day > days {
+		panic("Hour should be [0," + strconv.Itoa(days) + "]")
+	}
+
+	delta := day - j.Date.Day()
+	return JodaDate{j.Date.Add(time.Duration(delta) * 24 * time.Hour)}
+}
+
+// set month of the date and return copy
+func (j JodaDate) WithMonth(m int) JodaDate {
+	if m < 1 || m > 12 {
+		panic("Hour should be [1,12]")
+	}
+
+	return DateZone(j.Date.Year(), time.Month(m), j.Date.Day(), j.Date.Hour(), j.Date.Minute(), j.Date.Second(), j.Date.Nanosecond(), j.Date.Location())
+}
+
+// set year of the date and return copy
+func (j JodaDate) WithYear(y int) JodaDate {
+	return DateZone(y, j.Date.Month(), j.Date.Day(), j.Date.Hour(), j.Date.Minute(), j.Date.Second(), j.Date.Nanosecond(), j.Date.Location())
 }

@@ -283,3 +283,13 @@ func TestAddMonthBothLeap(t *testing.T) {
 		t.Error("should final month is: 2028-9-8 6:00")
 	}
 }
+
+// test with-year/month/...
+func TestWithJodaDate(t *testing.T) {
+	jt := DateFull(2021, 3, 4, 5, 6, 7, 8).WithYear(2020).WithMonth(2).WithDay(3).WithHour(4).WithMinute(5).WithSecond(6).WithNanosecond(0)
+	fmt.Println(jt)
+
+	if !(jt.Date.Year() == 2020 && jt.Date.Month() == 2 && jt.Date.Day() == 3 && jt.Date.Hour() == 4 && jt.Date.Minute() == 5 && jt.Date.Second() == 6 && jt.Date.Nanosecond() == 0) {
+		t.Error("fail to call with-year/month/...")
+	}
+}
